@@ -1,12 +1,12 @@
 var express = require('express');
-var mongo = require('../self_modules/MongoOperation.js');
+var mongo = require('../modules/core_processor.js');
 var router = express.Router();
 
 
 /* GET home page. */
 router.get('/', function(req, res, next) {
   res.render('index', { title: 'Express' });
-  //mongo.CalculateMatrix();
+  mongo.Calculate();
 });
 
 module.exports = router;

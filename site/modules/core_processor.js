@@ -51,7 +51,7 @@ module.exports = (function (m) {
     var finalMatrix = null;
     var queryWords = null; // init once, set values everytime when a query comes in
     var similarity = null; // final similarity array
-    var articleIndexToDocId = null;
+    var articleIndexToDoc = null;
 
     // key: word,
     // value: {index, tf * idf}
@@ -95,14 +95,14 @@ module.exports = (function (m) {
             return b.value - a.value;
         });
 
-        return similarity;
+        return similarity.map(function(v) {return v.doc;});
     };
 
     var simpleSimilar = function(queryVector, docMatrix)
     {
         for (var i = 0; i < similarity.length; ++i) {
             similarity[i] = {};
-            similarity[i].doc_id = articleIndexToDocId[i];
+            similarity[i].doc = articleIndexToDoc[i];
             var docVector = docMatrix._data[i];
             similarity[i].value = math.dot(docVector, queryVector);
         }
@@ -111,12 +111,9 @@ module.exports = (function (m) {
 
     var cosineSimilar = function(queryVector, docMatrix)
     {
-        var test0 = [0,0,1,0,0,0];
-        var test2 = [1,1,0,1,1,1];
-        var testr = math.dot(test0, test2);
         for (var i = 0; i < similarity.length; ++i) {
             similarity[i] = {};
-            similarity[i].doc_id = articleIndexToDocId[i];
+            similarity[i].doc = articleIndexToDoc[i];
             var docVector = docMatrix._data[i];
 
             // dot1,2
@@ -134,9 +131,9 @@ module.exports = (function (m) {
             if (err) { console.log(err); return;}
 
             /// Get all word out of result and construct the final matrix
-            finalMatrix = math.zeros(result[0].total_doc_count + 1, result.length);
-            similarity = new Array(result[0].total_doc_count + 1);
-            articleIndexToDocId = new Array(result[0].total_doc_count + 1);
+            finalMatrix = math.zeros(result[0].total_doc_count, result.length);
+            similarity = new Array(result[0].total_doc_count);
+            articleIndexToDoc = new Array(result[0].total_doc_count);
 
             // Init query words array
             queryWords = new Array(result.length);
@@ -155,13 +152,10 @@ module.exports = (function (m) {
                 // set article map
                 _.each(result[i].detail, function(detail){
                     if (articleDocIdToIndex[detail.doc_id] == null) {
-                        articleIndexToDocId[articleCount] = detail.doc_id;
+                        articleIndexToDoc[articleCount] = detail;
                         articleDocIdToIndex[detail.doc_id] = articleCount++;
                     }
                     finalMatrix._data[articleDocIdToIndex[detail.doc_id]][i] = detail.tfidf * detail.count;
-//                     if (detail.doc_id == '245') {
-//                         console.log(result[i].term, finalMatrix._data[articleDocIdToIndex[detail.doc_id]][i]);
-//                     }
                 });
             }
 

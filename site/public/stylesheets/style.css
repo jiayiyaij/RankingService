@@ -6,3 +6,31 @@ body {
 a {
   color: #00B7FF;
 }
+
+.search-input {
+  width: 90%;
+  height: 40px;
+  font-size: 20px;
+  padding-left: 10px;
+  position: relative;
+  float: left
+}
+
+.form-search {
+  width: 45%;
+  margin: auto;
+  border:none;
+}
+
+.search-btn {
+  margin:  0 auto;
+  display:block;
+}
+
+fieldset {
+  border:none;
+}
+
+.welcome {
+  margin-left:28%;
+}

@@ -5,13 +5,13 @@ var router = express.Router();
 
 /* GET home page. */
 router.get('/', function(req, res) {
-  res.render('index', { title: 'Express' });
+  res.render('index', { title: 'CSC575' });
   mongo.CalculateOnceADay();
 });
 
 router.post('/', function(req, res) {
-    mongo.Query(req.body.words);
-    res.render('result', { title: 'Express' });
+    var docs = mongo.Query(req.body.words);
+    res.render('index', { result_items: docs });
 });
 
 

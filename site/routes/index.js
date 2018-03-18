@@ -10,7 +10,7 @@ router.get('/', function(req, res) {
 
 router.post('/', function(req, res) {
     var docs = mongo.Query(req.body.words);
-    res.render('index', { result_items: docs });
+    res.render('index', { result_items: docs, title: 'CSC575' });
 });
 
 

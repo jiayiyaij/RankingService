@@ -3,3 +3,7 @@ extends layout
 block content
   h1= title
   p Welcome to #{title}
+  form( class='form-search' role='form' action='/' method='post' )
+            fieldset
+                input( type='words', name='words', class='form-search-input', placeholder='',required autofocus)
+                button(class="btn" type="submit") Search

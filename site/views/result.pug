@@ -1,0 +1,11 @@
+extends layout
+
+block content
+    mixin result_item(item)
+        .item_block
+            h1= item.doc_desc
+            p
+
+    ul
+        each item in result_items
+            result_item(item)

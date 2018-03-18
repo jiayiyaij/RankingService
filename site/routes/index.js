@@ -4,9 +4,15 @@ var router = express.Router();
 
 
 /* GET home page. */
-router.get('/', function(req, res, next) {
+router.get('/', function(req, res) {
   res.render('index', { title: 'Express' });
-  mongo.Calculate();
+  mongo.CalculateOnceADay();
 });
+
+router.post('/', function(req, res) {
+    mongo.Query(req.body.words);
+    res.render('result', { title: 'Express' });
+});
+
 
 module.exports = router;

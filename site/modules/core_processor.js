@@ -7,6 +7,7 @@ var _ = require("underscore");
 var stem = require('stem-porter');
 var sw = require('stopword');
 var mongoURL = "mongodb://34.205.33.211:27017/";
+var wordTableName = "words"; //testwords
 
 
 var core_processor = core_processor || {};
@@ -52,6 +53,8 @@ module.exports = (function (m) {
     var queryWords = null; // init once, set values everytime when a query comes in
     var similarity = null; // final similarity array
     var articleIndexToDoc = null;
+    var kWordCount = 0;
+    var kDocCount = 0;
 
     // key: word,
     // value: {index, tf * idf}
@@ -62,7 +65,8 @@ module.exports = (function (m) {
         query = query.toLowerCase();
 
         // fill the word vector with 0
-        queryWords.fill(0);
+        //queryWords.fill(0);
+        queryWords = math.zeros(1, kWordCount, 'sparse');
 
         // change to array
         var queryArray = query.split(/(\s+)/);
@@ -81,17 +85,17 @@ module.exports = (function (m) {
             if (lastWord == queryArray[i]) {lastCount++; continue; }
 
             if (wordsMap[lastWord] != null)
-            { queryWords[wordsMap[lastWord].index] = wordsMap[lastWord].idf * lastCount; }
+            { queryWords.set([0, wordsMap[lastWord].index], wordsMap[lastWord].idf * lastCount); }
 
             lastCount = 1;
             lastWord = queryArray[i];
         }
 
         // calculate similarity
-        cosineSimilar(queryWords, finalMatrix);
+        similarity = cosineSimilar(queryWords, finalMatrix);
 
         // sort similarity by value
-        similarity.sort(function(a,b){
+        math.sort(similarity, function(a, b) {
             return b.value - a.value;
         });
 
@@ -103,7 +107,7 @@ module.exports = (function (m) {
         for (var i = 0; i < similarity.length; ++i) {
             similarity[i] = {};
             similarity[i].doc = articleIndexToDoc[i];
-            var docVector = docMatrix._data[i];
+            var docVector = docMatrix.subset([i]);
             similarity[i].value = math.dot(docVector, queryVector);
         }
         return similarity;
@@ -111,32 +115,46 @@ module.exports = (function (m) {
 
     var cosineSimilar = function(queryVector, docMatrix)
     {
-        for (var i = 0; i < similarity.length; ++i) {
-            similarity[i] = {};
-            similarity[i].doc = articleIndexToDoc[i];
-            var docVector = docMatrix._data[i];
+        var transposeDocMatrix = math.transpose(docMatrix);
+        var alldot = math.multiply(queryVector, transposeDocMatrix);
 
-            // dot1,2
-            var dot1 = math.dot(docVector, docVector);
-            var dot2 = math.dot(queryVector, queryVector);
+        var selfDot1 = math.zeros(1, docMatrix.size()[0], 'sparse');
+        docMatrix = math.dotMultiply(docMatrix, docMatrix);
 
-            similarity[i].value = math.dot(docVector, queryVector);
-            similarity[i].value /= Math.sqrt(dot1 * dot2);
+        docMatrix.forEach(function(value, index, m){
+            selfDot1.set([0,index[0]], value + selfDot1.get([0, index[0]]));
+        }, true);
+
+        var selfDot2 = math.multiply(queryVector, math.transpose(queryVector));
+        var selfDotSqrt = selfDot1.map(function(v) {
+            return Math.sqrt(v * selfDot2._values[0]);
+        }, true);
+
+        alldot = math.dotDivide(alldot, selfDotSqrt);
+
+        // add doc information to it
+        var ret = new Array(alldot._data[0].length);
+        for (var i = 0; i < alldot._data[0].length; ++i) {
+            ret[i] = {};
+            ret[i].doc = articleIndexToDoc[i];
+            ret[i].value = alldot._data[0][i] || 0;
         }
-        return similarity;
+        return ret;
     };
 
     var parseWord = function(db) {
-        db.collection("testwords").find({}).toArray(function(err, result){
+        db.collection(wordTableName).find({}).toArray(function(err, result){
             if (err) { console.log(err); return;}
 
             /// Get all word out of result and construct the final matrix
-            finalMatrix = math.zeros(result[0].total_doc_count, result.length);
-            similarity = new Array(result[0].total_doc_count);
+            finalMatrix = math.zeros(result[0].total_doc_count, result.length, 'sparse');
+            similarity = math.zeros(1, result[0].total_doc_count, 'sparse');// new Array(result[0].total_doc_count);
             articleIndexToDoc = new Array(result[0].total_doc_count);
 
             // Init query words array
-            queryWords = new Array(result.length);
+            //queryWords = math.zeros(1, result.length, 'sparse');//new Array(result.length);
+            kWordCount = result.length;
+            kDocCount = result[0].total_doc_count;
 
             // Create a map, key is doc_id, value is index of array
             var articleDocIdToIndex = {};
@@ -155,7 +173,7 @@ module.exports = (function (m) {
                         articleIndexToDoc[articleCount] = detail;
                         articleDocIdToIndex[detail.doc_id] = articleCount++;
                     }
-                    finalMatrix._data[articleDocIdToIndex[detail.doc_id]][i] = detail.tfidf * detail.count;
+                    finalMatrix.set([articleDocIdToIndex[detail.doc_id], i], detail.tfidf * detail.count);
                 });
             }
 

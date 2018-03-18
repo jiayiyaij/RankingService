@@ -4,6 +4,7 @@ var favicon = require('serve-favicon');
 var logger = require('morgan');
 var cookieParser = require('cookie-parser');
 var bodyParser = require('body-parser');
+var mongo = require('./modules/core_processor.js');
 
 var index = require('./routes/index');
 var users = require('./routes/users');
@@ -44,5 +45,9 @@ app.use(function(err, req, res, next) {
   res.status(err.status || 500);
   res.render('error');
 });
+
+
+console.log("Preparing data(2 minutes), don't touch anything...");
+mongo.CalculateOnceADay();
 
 module.exports = app;

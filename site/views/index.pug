@@ -8,12 +8,4 @@ block content
                 button(class="search-btn" type="submit") Search
 
 
-  mixin result_item(item)
-          .item_block
-            a(href=item.doc_url target="_blank") #{item.doc_id}
-            p #{item.doc_desc}
-            p
-  if result_items
-        ul
-            each item in result_items
-                +result_item(item)
+  block result

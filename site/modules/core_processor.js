@@ -102,17 +102,6 @@ module.exports = (function (m) {
         return similarity.map(function(v) {return v.doc;});
     };
 
-    var simpleSimilar = function(queryVector, docMatrix)
-    {
-        for (var i = 0; i < similarity.length; ++i) {
-            similarity[i] = {};
-            similarity[i].doc = articleIndexToDoc[i];
-            var docVector = docMatrix.subset([i]);
-            similarity[i].value = math.dot(docVector, queryVector);
-        }
-        return similarity;
-    };
-
     var cosineSimilar = function(queryVector, docMatrix)
     {
         var transposeDocMatrix = math.transpose(docMatrix);

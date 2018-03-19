@@ -3,7 +3,7 @@ extends index
 block result
     mixin result_item(item)
               .item_block
-                 if item.doc_url
+                 if item
                    a(href=item.doc_url target="_blank") #{item.doc_title}
                    p #{item.doc_desc}
                    p
